@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.an.sa.mapper.SysVideoMapper">
+
+    <resultMap type="com.an.sa.entity.SysVideo" id="SysVideoResult">
+        <result property="id"    column="id"    />
+        <result property="uuid"    column="uuid"    />
+        <result property="person_id" column="person_id"/>
+        <result property="fileName"    column="fileName"    />
+        <result property="md5"    column="md5"    />
+        <result property="isValid"    column="isValid"    />
+        <result property="fileDeleted"    column="fileDeleted"    />
+        <result property="isDeleted"    column="isDeleted"    />
+    </resultMap>
+
+    <sql id="selectSysVideoVo">
+        select id, uuid, person_id, fileName, md5, isValid, fileDeleted, isDeleted from sys_video
+    </sql>
+
+    <select id="selectSysVideoList" parameterType="com.an.sa.entity.SysVideo" resultMap="SysVideoResult">
+        <include refid="selectSysVideoVo"/>
+        <where>
+            <if test="uuid != null  and uuid != ''"> and uuid = #{uuid}</if>
+            <if test="fileName != null  and fileName != ''"> and fileName like concat('%', #{fileName}, '%')</if>
+            <if test="md5 != null  and md5 != ''"> and md5 = #{md5}</if>
+            <if test="isValid != null "> and isValid = #{isValid}</if>
+            <if test="fileDeleted != null "> and fileDeleted = #{fileDeleted}</if>
+            <if test="isDeleted != null "> and isDeleted = #{isDeleted}</if>
+        </where>
+    </select>
+
+    <select id="selectSysVideoById" parameterType="Long" resultMap="SysVideoResult">
+        <include refid="selectSysVideoVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectSysVideoByUUID" parameterType="String" resultMap="SysVideoResult">
+        <include refid="selectSysVideoVo"/>
+        where uuid = #{uuid}
+    </select>
+
+    <select id="selectSysVideoByMD5" parameterType="String" resultMap="SysVideoResult">
+        <include refid="selectSysVideoVo"/>
+        where md5 = #{md5}
+    </select>
+
+    <insert id="insertSysVideo" parameterType="com.an.sa.entity.SysVideo">
+        insert into sys_video
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="uuid != null">uuid,</if>
+            <if test="person_id != null">person_id,</if>
+            <if test="fileName != null">fileName,</if>
+            <if test="md5 != null">md5,</if>
+            <if test="isValid != null">isValid,</if>
+            <if test="fileDeleted != null">fileDeleted,</if>
+            <if test="isDeleted != null">isDeleted,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="uuid != null">#{uuid},</if>
+            <if test="person_id != null">#{person_id},</if>
+            <if test="fileName != null">#{fileName},</if>
+            <if test="md5 != null">#{md5},</if>
+            <if test="isValid != null">#{isValid},</if>
+            <if test="fileDeleted != null">#{fileDeleted},</if>
+            <if test="isDeleted != null">#{isDeleted},</if>
+        </trim>
+    </insert>
+
+    <update id="updateSysVideo" parameterType="com.an.sa.entity.SysVideo">
+        update sys_video
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="uuid != null">uuid = #{uuid},</if>
+            <if test="fileName != null">fileName = #{fileName},</if>
+            <if test="md5 != null">md5 = #{md5},</if>
+            <if test="isValid != null">isValid = #{isValid},</if>
+            <if test="fileDeleted != null">fileDeleted = #{fileDeleted},</if>
+            <if test="isDeleted != null">isDeleted = #{isDeleted},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteSysVideoById" parameterType="Long">
+        delete from sys_video where id = #{id}
+    </delete>
+
+    <delete id="deleteSysVideoByIds" parameterType="String">
+        delete from sys_video where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
