@@ -10,13 +10,14 @@
         <result property="person_id" column="person_id"/>
         <result property="fileName"    column="fileName"    />
         <result property="md5"    column="md5"    />
+        <result property="receive_time"    column="receive_time"    />
         <result property="isValid"    column="isValid"    />
         <result property="fileDeleted"    column="fileDeleted"    />
         <result property="isDeleted"    column="isDeleted"    />
     </resultMap>
 
     <sql id="selectSysVideoVo">
-        select id, uuid, person_id, fileName, md5, isValid, fileDeleted, isDeleted from sys_video
+        select id, uuid, person_id, fileName, md5, receive_time, isValid, fileDeleted, isDeleted from sys_video
     </sql>
 
     <select id="selectSysVideoList" parameterType="com.an.sa.entity.SysVideo" resultMap="SysVideoResult">
@@ -54,6 +55,7 @@
             <if test="person_id != null">person_id,</if>
             <if test="fileName != null">fileName,</if>
             <if test="md5 != null">md5,</if>
+            <if test="receive_time != null">receive_time,</if>
             <if test="isValid != null">isValid,</if>
             <if test="fileDeleted != null">fileDeleted,</if>
             <if test="isDeleted != null">isDeleted,</if>
@@ -64,6 +66,7 @@
             <if test="person_id != null">#{person_id},</if>
             <if test="fileName != null">#{fileName},</if>
             <if test="md5 != null">#{md5},</if>
+            <if test="receive_time != null">#{receive_time},</if>
             <if test="isValid != null">#{isValid},</if>
             <if test="fileDeleted != null">#{fileDeleted},</if>
             <if test="isDeleted != null">#{isDeleted},</if>

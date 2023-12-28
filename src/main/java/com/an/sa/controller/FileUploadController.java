@@ -1,19 +1,28 @@
 package com.an.sa.controller;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.an.sa.Result;
+import com.an.sa.dto.VideoAnalyzeInfo;
 import com.an.sa.dto.VideoAnalyzeProcess;
+import com.an.sa.entity.ShenshiResult;
 import com.an.sa.entity.SysVideo;
+import com.an.sa.entity.VibraResult;
 import com.an.sa.entity.VideoFileMeta;
 import com.an.sa.exception.StorageFileNotFoundException;
+import com.an.sa.service.IShenshiResultService;
 import com.an.sa.service.ISysVideoService;
+import com.an.sa.service.IVibraResultService;
 import com.an.sa.service.StorageService;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.apache.commons.io.FilenameUtils;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -29,6 +38,22 @@ public class FileUploadController {
 
     @Autowired
     private ISysVideoService sysVideoService;
+
+    @Autowired
+    private IVibraResultService vibraResultService;
+
+    @Autowired
+    private IShenshiResultService shenshiResultService;
+
+
+    @Autowired
+    private Queue vibraQueue;
+
+    @Autowired
+    private Queue shenshiQueue;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     @Autowired
     public FileUploadController(StorageService storageService) {
@@ -71,10 +96,59 @@ public class FileUploadController {
         return Result.success(sysVideoService.getPersonVideoList(person_id));
     }
 
-//    @PostMapping("/getVideoAnalyzeProcessByUUID")
-//    public Result<VideoAnalyzeProcess> getVideoAnalyzeProcessByUUID(@RequestParam("uuid") String uuid) {
-//
-//    }
+    @PostMapping("/getVibraResultByUUID")
+    public Result<VibraResult> getVibraResultByUUID(@RequestParam("uuid") String uuid) {
+        SysVideo video = sysVideoService.selectSysVideoByUUID(uuid);
+
+        if (video == null) {
+            return Result.error(1, "uuid not found");
+        }
+
+        return Result.success(vibraResultService.query().eq("id", video.getId()).one());
+    }
+
+    @PostMapping("/getShenshiResultByUUID")
+    public Result<ShenshiResult> getShenshiResultByUUID(@RequestParam("uuid") String uuid) {
+        SysVideo video = sysVideoService.selectSysVideoByUUID(uuid);
+
+        if (video == null) {
+            return Result.error(1, "uuid not found");
+        }
+
+        return Result.success(shenshiResultService.query().eq("id", video.getId()).one());
+    }
+
+    @PostMapping("/getVideoAnalyzeProcessByUUID")
+    public Result<VideoAnalyzeProcess> getVideoAnalyzeProcessByUUID(@RequestParam("uuid") String uuid) {
+        VideoAnalyzeProcess process = new VideoAnalyzeProcess();
+
+        SysVideo video = sysVideoService.selectSysVideoByUUID(uuid);
+
+        if (video == null) {
+            return Result.error(1, "uuid not found");
+        }
+
+        process.setVibra(vibraResultService.count(new QueryWrapper<VibraResult>().eq("id", video.getId())) > 0);
+        process.setShenshi(shenshiResultService.count(new QueryWrapper<ShenshiResult>().eq("id", video.getId())) > 0);
+
+        return Result.success(process);
+    }
+
+    @PostMapping("/getVideoAnalyzeProcessByID")
+    public Result<VideoAnalyzeProcess> getVideoAnalyzeProcessByID(@RequestParam("id") Long id) {
+        VideoAnalyzeProcess process = new VideoAnalyzeProcess();
+
+        SysVideo video = sysVideoService.selectSysVideoById(id);
+
+        if (video == null) {
+            return Result.error(1, "uuid not found");
+        }
+
+        process.setVibra(vibraResultService.count(new QueryWrapper<VibraResult>().eq("id", id)) > 0);
+        process.setShenshi(shenshiResultService.count(new QueryWrapper<ShenshiResult>().eq("id", id)) > 0);
+
+        return Result.success(process);
+    }
 
 
     /**
@@ -110,6 +184,7 @@ public class FileUploadController {
         video.setPerson_id(person_id);
         video.setFileName(file.getOriginalFilename());
         video.setMd5(md5Value);
+        video.setReceive_time(new Date());
         video.setIsValid(true);
         video.setIsDeleted(false);
         video.setFileDeleted(false);
@@ -124,8 +199,15 @@ public class FileUploadController {
 
         sysVideoService.insertSysVideo(video);
 
-        // send to analyze message queue
+        SysVideo insertedVideo = sysVideoService.selectSysVideoByUUID(fileUUID);
 
+        VideoAnalyzeInfo analyzeInfo = new VideoAnalyzeInfo();
+        analyzeInfo.setId(insertedVideo.getId());
+        analyzeInfo.setMeta(videoFileMeta);
+
+        // send to analyze message queue
+        rabbitTemplate.convertAndSend(vibraQueue.getName(), analyzeInfo);
+        rabbitTemplate.convertAndSend(shenshiQueue.getName(), analyzeInfo);
 
         return Result.success(fileUUID);
     }

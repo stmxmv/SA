@@ -1,0 +1,26 @@
+drop table sys_video;
+CREATE TABLE sys_video (
+    id BIGINT not null auto_increment PRIMARY KEY,
+    uuid VARCHAR(255) not null,
+    person_id  BIGINT not null,
+    fileName VARCHAR(255) not null,
+    md5 VARCHAR(255) not null,
+    receive_time datetime default(now()) not null,
+    isValid  BOOLEAN default(true) not null,
+    fileDeleted BOOLEAN default(false) not null,
+    isDeleted BOOLEAN default(false) not null
+) engine=innodb auto_increment=100;
+
+drop table vibra_result;
+CREATE TABLE vibra_result (
+    id BIGINT not null PRIMARY KEY,
+    analyze_time datetime default(now()) not null,
+    result blob
+) engine=innodb;
+
+drop table  shenshi_result;
+CREATE TABLE shenshi_result (
+    id BIGINT not null PRIMARY KEY,
+    analyze_time datetime default(now()) not null,
+    result blob
+) engine=innodb;
